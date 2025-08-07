@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+    <title>Acerca</title>
+</head>
+
+<body>
+    <nav class="nav"><a href="/">Inicio</a><a href="/productos.html">Productos</a></nav>
+    <div class="card center">
+        <h2>Quiénes somos</h2>
+        <p>Misión, visión, contacto: contacto@gameshop.io</p>
+    </div>
+    <div class="card center">
+        <h3>Ubicación</h3>
+        <div id="map" style="height:380px;border-radius:16px;overflow:hidden"></div>
+    </div>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        const map = L.map('map').setView([19.4326, -99.1332], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+        L.marker([19.4326, -99.1332]).addTo(map).bindPopup('GameShop HQ');
+    </script>
+</body>
+
+</html>

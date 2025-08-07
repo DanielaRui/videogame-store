@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/styles.css">
+    <title>Registro</title>
+</head>
+
+<body>
+    <nav class="nav"><a href="/">Inicio</a><a href="/login.html">Entrar</a></nav>
+    <div class="card center">
+        <h2>Crea tu cuenta</h2>
+        <input class="input" id="email" placeholder="Correo" type="email">
+        <input class="input" id="password" placeholder="Contraseña" type="password">
+        <button class="btn" id="btn-register">Registrarme</button>
+        <p id="msg"></p>
+    </div>
+    <script>
+        const API = '';
+        document.getElementById('btn-register').onclick = async () => {
+            const email = emailInput.value.trim();
+            const password = password.value.trim();
+            msg.textContent = 'Creando...';
+            try {
+                const r = await fetch('/api/auth/register', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await r.json();
+                if (!r.ok) throw new Error(data.error || 'Error al registrar');
+                msg.textContent = 'Usuario creado ✔';
+                setTimeout(() => location.href = '/login.html', 800);
+            } catch (e) { msg.textContent = e.message; }
+        };
+        const emailInput = document.getElementById('email');
+        const password = document.getElementById('password');
+        const msg = document.getElementById('msg');
+    </script>
+</body>
+
+</html>

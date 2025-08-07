@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/styles.css">
+    <title>Entrar</title>
+</head>
+
+<body>
+    <nav class="nav"><a href="/">Inicio</a><a href="/register.html">Crear cuenta</a></nav>
+    <div class="card center">
+        <h2>Inicia sesión</h2>
+        <input class="input" id="email" placeholder="Correo" type="email">
+        <input class="input" id="password" placeholder="Contraseña" type="password">
+        <button class="btn" id="btn-login">Entrar</button>
+        <p id="msg"></p>
+    </div>
+
+    <!-- Firebase Web SDK (v9 modular) -->
+    <script type="module">
+        // ⚠️ Reemplaza con tu config del proyecto (Firebase Console → Configuración → tus apps → Web)
+        const firebaseConfig = {
+            apiKey: "TU_API_KEY",
+            authDomain: "TU_PROJECT_ID.firebaseapp.com",
+            projectId: "TU_PROJECT_ID",
+            appId: "TU_APP_ID"
+        };
+
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut }
+            from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        const emailEl = document.getElementById('email');
+        const passEl = document.getElementById('password');
+        const msg = document.getElementById('msg');
+
+        document.getElementById('btn-login').onclick = async () => {
+            msg.textContent = 'Verificando...';
+            try {
+                const cred = await signInWithEmailAndPassword(auth, emailEl.value.trim(), passEl.value.trim());
+                const idToken = await cred.user.getIdToken(); // si luego quieres enviarlo a tu backend
+                localStorage.setItem('uid', cred.user.uid);
+                msg.textContent = 'Listo ✔';
+                setTimeout(() => location.href = '/', 600);
+            } catch (e) {
+                msg.textContent = e.message;
+            }
+        };
+
+        // Opcional: redirección si ya está logueado
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // Actualiza navbar, etc.
+            }
+        });
+    </script>
+</body>
+
+</html>
