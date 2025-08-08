@@ -3,12 +3,12 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <link rel="manifest" href="manifest.json">
 
   <link rel="stylesheet" href="css/styles.css">
-  <title>VideoGameStore</title> 
+  <title>VideoGameStore</title>
 </head>
 
 <body>
@@ -21,18 +21,23 @@
 
   </nav>
 
-  <div class="card center" id="weather"> <!-- Sección del clima -->
+  <div class="card center" id="weather">
     <h3>Clima</h3>
     <div id="weather-out">Cargando clima...</div>
   </div>
-
   <script type="module">
-    const OPENWEATHER_KEY = 'TU_KEY'; // proxear por backend o usar un proxy desde backend!!!!
-    async function loadWeather() {
-      if (!navigator.geolocation) return weatherOut.textContent = 'Sin geolocalización';
+    const OPENWEATHER_KEY = 'TU_KEY';
+    const weatherOut = document.getElementById('weather-out');
+
+    function loadWeather() {
+      if (!navigator.geolocation) {
+        weatherOut.textContent = 'Sin geolocalización';
+        return;
+      }
       navigator.geolocation.getCurrentPosition(async ({ coords }) => {
         const url = `https://api.openweathermap.org/data/2.5/weather?lat=${coords.latitude}&lon=${coords.longitude}&appid=${OPENWEATHER_KEY}&units=metric&lang=es`;
-        const r = await fetch(url); const data = await r.json();
+        const r = await fetch(url);
+        const data = await r.json();
         const icon = `https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`;
         weatherOut.innerHTML = `
         <div style="display:flex;gap:12px;align-items:center">
@@ -44,13 +49,10 @@
         </div>`;
       }, () => { weatherOut.textContent = 'Permiso de ubicación denegado'; });
     }
-    const weatherOut = document.getElementById('weather-out') || document.getElementById('weather-out');
-    const el = document.getElementById('weather-out') || document.getElementById('weather')?.querySelector('#weather-out');
-    window.weatherOut = document.getElementById('weather-out');
     loadWeather();
   </script>
 
-  <h1>Bienvenido a GameShop</h1>
+  <h1>Bienvenido a VideogameStore</h1>
 
   <script src="js/app.js" type="module"></script>
 </body>

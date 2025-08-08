@@ -3,31 +3,37 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
     <link rel="stylesheet" href="css/styles.css">
     <title>Productos</title>
 </head>
 
 <body>
-    <nav class="nav"><a href="/">Inicio</a><a href="/acerca.html">Acerca</a></nav>
+    <nav class="nav"><a href="/">Inicio</a><a href="/productos.html">Productos</a><a href="/acerca.html">Acerca</a>
+    </nav>
     <h2 style="padding:20px">Juegos</h2>
-    <div class="center">
-        <div class="card">
-            <h3>Cyberpunk 2077</h3>
-            <p>Acción-RPG futurista.</p>
-            <button class="btn" onclick="location.href='pago.html?sku=cyberpunk&price=59.99'">Comprar $59.99</button>
-        </div>
-        <div class="card">
-            <h3>Red Dead Redemption 2</h3>
-            <p>Western épico.</p>
-            <button class="btn" onclick="location.href='pago.html?sku=rdr2&price=39.99'">Comprar $39.99</button>
-        </div>
-        <div class="card">
-            <h3>Like a Dragon Gaiden</h3>
-            <p>Acción y locura estilo Yakuza.</p>
-            <button class="btn" onclick="location.href='pago.html?sku=ladg&price=49.99'">Comprar $49.99</button>
-        </div>
+    <div id="grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;padding:20px">
     </div>
+
+    <script type="module">
+        async function load() {
+            const res = await fetch('/api/products');
+            const data = await res.json();
+            const grid = document.getElementById('grid');
+            grid.innerHTML = data.map(p => `
+    <div class="card">
+      ${p.image ? `<img src="${p.image}" alt="" style="width:100%;height:140px;object-fit:cover;border-radius:14px">` : ''}
+      <h3>${p.name}</h3>
+      <p>${p.description || ''}</p>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <b>$${p.price} ${p.currency}</b>
+        <a class="btn" href="/pago.html?sku=${encodeURIComponent(p.sku)}">Comprar</a>
+      </div>
+    </div>
+  `).join('');
+        }
+        load();
+    </script>
 </body>
 
 </html>
