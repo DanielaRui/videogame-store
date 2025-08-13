@@ -1,92 +1,123 @@
 // frontend/service-worker.js
-const CACHE_NAME = 'gameshop-v7';
+// 📦 Versiona al cambiar (para forzar actualización)
+const CACHE_STATIC  = 'gs-static-v1';
+const CACHE_RUNTIME = 'gs-runtime-v1';
+const OFFLINE_URL   = '/offline.html';
 
-// Archivos estáticos mínimos para que la app cargue offline
+// Precarga de assets esenciales
 const ASSETS = [
-  '/',                 // raíz
+  '/',                // raíz (sirve index.html)
   '/index.html',
+  '/offline.html',
   '/manifest.json',
   '/css/styles.css',
   '/js/app.js',
   '/navbar.html',
   '/nav.js',
   '/js/weather.js',
-  // agrega aquí otras rutas estáticas que quieras precachear
+  // si tienes imágenes/logo propios, agrégalos aquí
+  '/icons/icon-192.png',
+  '/icons/icon-512.png'
 ];
 
-self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(ASSETS))
-  );
-  self.skipWaiting(); // toma control sin esperar
+self.addEventListener('install', (event) => {
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE_STATIC);
+    await cache.addAll(ASSETS);
+  })());
+  self.skipWaiting();
 });
 
-self.addEventListener('activate', (e) => {
-  e.waitUntil((async () => {
-    const names = await caches.keys();
-    await Promise.all(names.filter(n => n !== CACHE).map(n => caches.delete(n)));
-    await self.clients.claim(); // controla todas las pestañas abiertas
+self.addEventListener('activate', (event) => {
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(
+      keys
+        .filter(k => k !== CACHE_STATIC && k !== CACHE_RUNTIME)
+        .map(k => caches.delete(k))
+    );
+    await self.clients.claim();
   })());
 });
 
 // Estrategias:
-// - Iconos OpenWeather: cache-first
-// - HTML y APIs: network-first (con fallback a cache o '/')
-// - Estáticos locales: cache-first
-self.addEventListener('fetch', (e) => {
-  const req = e.request;
+// - Navegación/HTML: network-first con fallback a cache y luego offline.html
+// - Estáticos mismo origen: cache-first (con actualización diferida)
+// - Iconos de OpenWeather: cache-first
+// - Resto (cross-origin): network-first con fallback a cache
+self.addEventListener('fetch', (event) => {
+  const req = event.request;
   const url = new URL(req.url);
 
-  // 1) Iconos de OpenWeather (https://openweathermap.org/img/wn/..)
+  // Solo GET
+  if (req.method !== 'GET') return;
+
+  // 1) Iconos de OpenWeather
   if (url.hostname.includes('openweathermap.org') && url.pathname.includes('/img/wn/')) {
-    e.respondWith((async () => {
+    event.respondWith((async () => {
       const cached = await caches.match(req);
       if (cached) return cached;
-      const res = await fetch(req);
-      const cache = await caches.open(CACHE);
-      cache.put(req, res.clone());
-      return res;
+      try {
+        const res = await fetch(req);
+        const cache = await caches.open(CACHE_RUNTIME);
+        cache.put(req, res.clone());
+        return res;
+      } catch (e) {
+        // Si falla, no hay buen placeholder; devuelve 504 controlado
+        return new Response('', { status: 504, statusText: 'Icon unavailable offline' });
+      }
     })());
     return;
   }
 
-  // 2) HTML y APIs → network-first
-  const isHTML = req.headers.get('accept')?.includes('text/html');
-  const isAPI  = url.pathname.startsWith('/api/');
-  if (isHTML || isAPI) {
-    e.respondWith((async () => {
+  // 2) Navegaciones/HTML (Accept: text/html o mode 'navigate')
+  const isNav = req.mode === 'navigate' || req.headers.get('accept')?.includes('text/html');
+  if (isNav) {
+    event.respondWith((async () => {
       try {
-        // intenta red primero (mejor dato)
+        // red primero
         const fresh = await fetch(req);
-        // opcional: guarda respuesta HTML en cache para fallback futuro
-        if (isHTML && fresh.ok) {
-          const cache = await caches.open(CACHE);
-          cache.put(req, fresh.clone());
-        }
+        // cachea copia para futuros offline
+        const cache = await caches.open(CACHE_STATIC);
+        cache.put(req, fresh.clone());
         return fresh;
       } catch {
-        // si no hay red, intenta caché o fallback a '/'
-        return (await caches.match(req)) || (await caches.match('/'));
+        // fallback a cache o a offline.html
+        const cached = await caches.match(req);
+        return cached || (await caches.match(OFFLINE_URL));
       }
     })());
     return;
   }
 
-  // 3) Estáticos locales → cache-first
-  e.respondWith((async () => {
-    const cached = await caches.match(req);
-    if (cached) return cached;
+  // 3) Estáticos mismo origen → cache-first
+  if (url.origin === location.origin) {
+    event.respondWith((async () => {
+      const cached = await caches.match(req);
+      if (cached) return cached;
+      try {
+        const res = await fetch(req);
+        const cache = await caches.open(CACHE_STATIC);
+        cache.put(req, res.clone());
+        return res;
+      } catch {
+        // Si no hay cache ni red, error controlado
+        return new Response('', { status: 504, statusText: 'Asset unavailable offline' });
+      }
+    })());
+    return;
+  }
+
+  // 4) Cross-origin genérico → network-first con fallback a cache
+  event.respondWith((async () => {
     try {
       const res = await fetch(req);
-      // guarda solo si es mismo origen (evita llenar cache con todo internet)
-      if (url.origin === location.origin) {
-        const cache = await caches.open(CACHE);
-        cache.put(req, res.clone());
-      }
+      const cache = await caches.open(CACHE_RUNTIME);
+      cache.put(req, res.clone());
       return res;
     } catch {
-      // si falla y no hay caché, no hay mucho que hacer
-      return cached || Response.error();
+      const cached = await caches.match(req);
+      return cached || new Response('', { status: 504, statusText: 'Resource unavailable offline' });
     }
   })());
 });

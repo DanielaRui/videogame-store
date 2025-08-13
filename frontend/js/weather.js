@@ -1,5 +1,5 @@
 // frontend/js/weather.js
-const OPENWEATHER_KEY = "59ad8c185d15aa2a4d8f0114e81380f6"; // <-- pon tu key real
+const OPENWEATHER_KEY = "59ad8c185d15aa2a4d8f0114e81380f6"; 
 const LS_CITY_KEY = 'weather:city';
 
 export function getSavedCity() {
