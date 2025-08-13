@@ -15,8 +15,12 @@
     
     <div class="card center">
         <h2>Quiénes somos</h2>
-        <p>Misión, visión, contacto: contacto@gameshop.io</p>
+        <p><strong>Misión:</strong> Ofrecer a nuestros clientes los mejores videojuegos con un servicio rápido, seguro y accesible.</p>
+        <p><strong>Visión:</strong> Ser la tienda de videojuegos preferida en la región, reconocida por su innovación y atención al cliente.</p>
+        <p><strong>Teléfono:</strong> +52 656 123 4567</p>
+        <p><strong>Correo:</strong> videogamestore@gmail.com</p>
     </div>
+
     <div class="card center">
         <h3>Ubicación</h3>
         <div id="map" style="height:380px;border-radius:16px;overflow:hidden"></div>
@@ -26,7 +30,7 @@
     <script>
         const map = L.map('map').setView([19.4326, -99.1332], 12);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
-        L.marker([19.4326, -99.1332]).addTo(map).bindPopup('GameShop HQ');
+        L.marker([19.4326, -99.1332]).addTo(map).bindPopup('VideoGameStore HQ');
     </script>
 
     <!-- Loader para el navbar -->
@@ -35,7 +39,7 @@
         .then(res => res.text())
         .then(html => {
           document.getElementById("navbar-container").innerHTML = html;
-          import("/nav.js"); // lógica de login/logout, ocultar Productos, mostrar correo
+          import("/nav.js");
         });
     </script>
 </body>

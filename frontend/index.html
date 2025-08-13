@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -12,7 +13,21 @@
   <!-- Navbar dinámico -->
   <div id="navbar-container"></div>
 
-  <h1 style="padding:20px">Bienvenido a VideogameStore</h1>
+  <!-- HERO centrado -->
+  <section class="hero">
+    <div class="hero-glass"></div>
+    <h1 class="hero-title">Bienvenido a <span>VideogameStore</span></h1>
+    <p class="hero-subtitle">
+      Tu tienda PWA de videojuegos: registro y login con Firebase, clima por ciudad o GPS,
+      catálogo en tiempo real, pagos seguros con PayPal, modo offline y mapa del negocio.
+    </p>
+    <!-- Elementos flotantes estilo holográfico -->
+    <div class="float shape-a"></div>
+    <div class="float shape-b"></div>
+    <div class="float shape-c"></div>
+  </section>
+
+
 
   <!-- Clima -->
   <div class="card center" id="weather">
@@ -22,6 +37,37 @@
       <button class="btn" id="btn-change-city" style="width:auto">Cambiar ciudad</button>
     </div>
   </div>
+
+  <!-- TÍTULO DE FUNCIONALIDADES -->
+  <h2 class="section-title">Funcionalidades</h2>
+
+  <!-- RESUMEN DE FUNCIONALIDADES -->
+  <section class="features">
+    <article class="feature-card">
+      <h4>Registro & Login</h4>
+      <p>Autenticación con Firebase (correo/contraseña). El navbar muestra tu sesión y protege páginas.</p>
+    </article>
+    <article class="feature-card">
+      <h4>Geolocalización & Clima</h4>
+      <p>Detecta tu ciudad (GPS/IP) o escríbela; muestra iconos e info de OpenWeather.</p>
+    </article>
+    <article class="feature-card">
+      <h4>Catálogo en tiempo real</h4>
+      <p>Productos desde Firestore: nombre, imagen, descripción, precio y moneda.</p>
+    </article>
+    <article class="feature-card">
+      <h4>Pagos con PayPal</h4>
+      <p>Compra segura por SKU: crea y captura órdenes con PayPal SDK y tu backend.</p>
+    </article>
+    <article class="feature-card">
+      <h4>PWA & Offline</h4>
+      <p>Service Worker, manifest, iconos e instalación. Caché de assets e iconos del clima.</p>
+    </article>
+    <article class="feature-card">
+      <h4>Mapa del negocio</h4>
+      <p>Vista en “Acerca” con OpenStreetMap/Leaflet (o Google Places) para ubicar la tienda.</p>
+    </article>
+  </section>
 
   <!-- App base -->
   <script type="module" src="/js/app.js"></script>
@@ -76,4 +122,5 @@
     });
   </script>
 </body>
+
 </html>
