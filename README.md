@@ -37,7 +37,7 @@ Aplicación web progresiva (PWA) que simula una tienda de videojuegos. Permite r
 
 5. **Crea el archivo `.env` en `backend/` con tus variables de entorno si es necesario.**
 
-6. **Inicia el servidor:**
+6. **Inicia el servidor(importante estar dentro de la carpeta backend):**
    - Para producción:
      ```bash
      npm start

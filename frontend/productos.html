@@ -1,39 +1,63 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <link rel="stylesheet" href="css/styles.css">
-    <title>Productos</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="require-auth" content="true" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <title>Productos</title>
 </head>
 
 <body>
-    <nav class="nav"><a href="/">Inicio</a><a href="/productos.html">Productos</a><a href="/acerca.html">Acerca</a>
-    </nav>
-    <h2 style="padding:20px">Juegos</h2>
-    <div id="grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;padding:20px">
-    </div>
+  <!-- Navbar dinámico -->
+  <div id="navbar-container"></div>
 
-    <script type="module">
-        async function load() {
-            const res = await fetch('/api/products');
-            const data = await res.json();
-            const grid = document.getElementById('grid');
-            grid.innerHTML = data.map(p => `
-    <div class="card">
-      ${p.image ? `<img src="${p.image}" alt="" style="width:100%;height:140px;object-fit:cover;border-radius:14px">` : ''}
-      <h3>${p.name}</h3>
-      <p>${p.description || ''}</p>
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <b>$${p.price} ${p.currency}</b>
-        <a class="btn" href="/pago.html?sku=${encodeURIComponent(p.sku)}">Comprar</a>
-      </div>
-    </div>
-  `).join('');
+  <h2 style="padding:20px">Juegos</h2>
+  <div id="grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;padding:20px"></div>
+
+  <!-- Cargar navbar.html y luego la lógica de nav.js -->
+  <script>
+    fetch("/navbar.html")
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById("navbar-container").innerHTML = html;
+        import("/nav.js"); // controla Entrar/Salir, correo y la redirección por require-auth
+      });
+  </script>
+
+  <!-- Catálogo -->
+  <script type="module">
+    const grid = document.getElementById('grid');
+
+    async function load() {
+      grid.innerHTML = '<div class="card">Cargando catálogo...</div>';
+      try {
+        const res = await fetch('/api/products');
+        if (!res.ok) throw new Error('No se pudo cargar el catálogo');
+        const data = await res.json();
+
+        if (!Array.isArray(data) || data.length === 0) {
+          grid.innerHTML = '<div class="card">No hay productos disponibles.</div>';
+          return;
         }
-        load();
-    </script>
-</body>
 
+        grid.innerHTML = data.map(p => `
+          <div class="card">
+            ${p.image ? `<img src="${p.image}" alt="" style="width:100%;height:140px;object-fit:cover;border-radius:14px">` : ''}
+            <h3>${p.name}</h3>
+            <p>${p.description || ''}</p>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <b>$${p.price} ${p.currency}</b>
+              <a class="btn" href="/pago.html?sku=${encodeURIComponent(p.sku)}">Comprar</a>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        grid.innerHTML = `<div class="card">Error: ${err.message}</div>`;
+      }
+    }
+
+    load();
+  </script>
+</body>
 </html>

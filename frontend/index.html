@@ -1,60 +1,79 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <link rel="manifest" href="manifest.json">
-
-  <link rel="stylesheet" href="css/styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="css/styles.css" />
   <title>VideoGameStore</title>
 </head>
 
 <body>
+  <!-- Navbar dinámico -->
+  <div id="navbar-container"></div>
 
-  <nav class="nav"> <!-- Links de navegación -->
-    <a href="/">Inicio</a>
-    <a href="/productos.html">Productos</a>
-    <a href="/acerca.html">Acerca de</a>
-    <a href="/login.html" id="login-link">Login</a>
+  <h1 style="padding:20px">Bienvenido a VideogameStore</h1>
 
-  </nav>
-
+  <!-- Clima -->
   <div class="card center" id="weather">
     <h3>Clima</h3>
-    <div id="weather-out">Cargando clima...</div>
+    <div id="weather-out">Inicia sesión para ver el clima</div>
+    <div style="margin-top:8px">
+      <button class="btn" id="btn-change-city" style="width:auto">Cambiar ciudad</button>
+    </div>
   </div>
-  <script type="module">
-    const OPENWEATHER_KEY = 'TU_KEY';
-    const weatherOut = document.getElementById('weather-out');
 
-    function loadWeather() {
-      if (!navigator.geolocation) {
-        weatherOut.textContent = 'Sin geolocalización';
-        return;
-      }
-      navigator.geolocation.getCurrentPosition(async ({ coords }) => {
-        const url = `https://api.openweathermap.org/data/2.5/weather?lat=${coords.latitude}&lon=${coords.longitude}&appid=${OPENWEATHER_KEY}&units=metric&lang=es`;
-        const r = await fetch(url);
-        const data = await r.json();
-        const icon = `https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`;
-        weatherOut.innerHTML = `
-        <div style="display:flex;gap:12px;align-items:center">
-          <img src="${icon}" alt="" width="64" height="64">
-          <div>
-            <div><b>${data.name}</b></div>
-            <div>${Math.round(data.main.temp)}°C — ${data.weather[0].description}</div>
-          </div>
-        </div>`;
-      }, () => { weatherOut.textContent = 'Permiso de ubicación denegado'; });
-    }
-    loadWeather();
+  <!-- App base -->
+  <script type="module" src="/js/app.js"></script>
+
+  <!-- Cargar navbar.html y luego nav.js -->
+  <script>
+    fetch("/navbar.html")
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById("navbar-container").innerHTML = html;
+        import("/nav.js");
+      });
   </script>
 
-  <h1>Bienvenido a VideogameStore</h1>
+  <!-- Gate por sesión + weather.js -->
+  <script type="module">
+    import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+    import { detectCityAndRender, getSavedCity, saveCity, renderWeatherByCity } from "/js/weather.js";
 
-  <script src="js/app.js" type="module"></script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCJR317CGtPIRnQeans4-HVJh1-1gWQUyA",
+      authDomain: "videogame-store-a1846.firebaseapp.com",
+      projectId: "videogame-store-a1846",
+      appId: "1:363585521202:web:7ffca0b4c4a7777550de2b"
+    };
+    if (!getApps().length) initializeApp(firebaseConfig);
+    const auth = getAuth();
+
+    const out = document.getElementById('weather-out');
+    const btnChange = document.getElementById('btn-change-city');
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // Detecta ciudad (GPS → IP → prompt) solo si no hay una guardada
+        detectCityAndRender('#weather-out');
+      } else {
+        out.textContent = 'Inicia sesión para ver el clima';
+      }
+    });
+
+    // Cambiar ciudad manualmente
+    btnChange.addEventListener('click', async () => {
+      if (!auth.currentUser) { out.textContent = 'Inicia sesión para configurar'; return; }
+      const prev = getSavedCity();
+      const city = prompt('¿En qué ciudad estás?', prev || 'Ciudad Juárez, MX');
+      if (city) {
+        const clean = city.trim();
+        saveCity(clean);
+        await renderWeatherByCity(clean, '#weather-out');
+      }
+    });
+  </script>
 </body>
-
 </html>

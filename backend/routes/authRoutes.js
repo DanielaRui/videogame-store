@@ -1,8 +1,8 @@
+
 const express = require('express');
 const router = express.Router();
 const admin = require('../firebase');
 
-// Registrar usuario
 router.post('/register', async (req, res) => {
   const { email, password } = req.body;
   try {

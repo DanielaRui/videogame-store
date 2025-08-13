@@ -1,97 +1,110 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <link rel="stylesheet" href="css/styles.css">
-    <title>Pago</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <!-- Esta meta hace que nav.js redirija a login si no hay sesión -->
+  <meta name="require-auth" content="true" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <title>Pago</title>
 </head>
 
 <body>
-    <nav class="nav"><a href="/">Inicio</a><a href="/productos.html">Productos</a></nav>
-    <div class="card center">
-        <h2 id="title">Cargando producto...</h2>
-        <p id="desc"></p>
-        <p><b id="price"></b></p>
-        <div id="paypal-button-container"></div>
-        <p id="msg"></p>
-    </div>
+  <!-- Navbar dinámico -->
+  <div id="navbar-container"></div>
 
-    <script type="module">
-        const params = new URLSearchParams(location.search);
-        const sku = params.get('sku');
-        const title = document.getElementById('title');
-        const desc = document.getElementById('desc');
-        const price = document.getElementById('price');
-        const msg = document.getElementById('msg');
+  <div class="card center">
+    <h2 id="title">Cargando producto...</h2>
+    <p id="desc"></p>
+    <p><b id="price"></b></p>
+    <div id="paypal-button-container"></div>
+    <p id="msg"></p>
+  </div>
 
-        let product = null;
+  <!-- Cargar navbar.html y luego la lógica de nav.js -->
+  <script>
+    fetch("/navbar.html")
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById("navbar-container").innerHTML = html;
+        import("/nav.js"); // controla Entrar/Salir, correo y la redirección por require-auth
+      });
+  </script>
 
-        async function bootstrap() {
-            if (!sku) { title.textContent = 'SKU inválido'; return; }
+  <!-- Lógica de pago (igual a la tuya) -->
+  <script type="module">
+    const params = new URLSearchParams(location.search);
+    const sku   = params.get('sku');
+    const title = document.getElementById('title');
+    const desc  = document.getElementById('desc');
+    const price = document.getElementById('price');
+    const msg   = document.getElementById('msg');
 
-            // 1) Producto desde API (Firestore)
-            const pRes = await fetch('/api/products/' + encodeURIComponent(sku));
-            if (!pRes.ok) { title.textContent = 'Producto no encontrado'; return; }
-            product = await pRes.json();
-            title.textContent = product.name;
-            desc.textContent = product.description || '';
-            price.textContent = `$${product.price} ${product.currency}`;
+    let product = null;
 
-            // 2) Config PayPal (clientId)
-            const cfgRes = await fetch('/api/paypal/config');
-            const cfg = await cfgRes.json();
-            const clientId = cfg.clientId;
+    async function bootstrap() {
+      if (!sku) { title.textContent = 'SKU inválido'; return; }
 
-            // 3) Cargar SDK PayPal
-            const script = document.createElement('script');
-            script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=${product.currency}`;
-            script.onload = renderButton;
-            document.body.appendChild(script);
+      // 1) Traer producto desde tu API (lee Firestore)
+      const pRes = await fetch('/api/products/' + encodeURIComponent(sku));
+      if (!pRes.ok) { title.textContent = 'Producto no encontrado'; return; }
+      product = await pRes.json();
+      title.textContent = product.name;
+      desc.textContent = product.description || '';
+      price.textContent = `$${product.price} ${product.currency}`;
+
+      // 2) Config PayPal (clientId)
+      const cfgRes = await fetch('/api/paypal/config');
+      const cfg = await cfgRes.json();
+      const clientId = cfg.clientId;
+
+      // 3) Cargar SDK PayPal
+      const script = document.createElement('script');
+      script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=${product.currency}`;
+      script.onload = renderButton;
+      document.body.appendChild(script);
+    }
+
+    async function renderButton() {
+      // @ts-ignore
+      paypal.Buttons({
+        style: { layout: 'vertical', shape: 'pill' },
+
+        // Crear orden (precio validado en backend por SKU)
+        createOrder: async () => {
+          const r = await fetch('/api/paypal/create-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sku: product.sku })
+          });
+          const data = await r.json();
+          if (!r.ok) throw new Error(data.error || 'No se pudo crear la orden');
+          return data.id;
+        },
+
+        // Capturar pago
+        onApprove: async (data) => {
+          msg.textContent = 'Capturando pago...';
+          const r = await fetch('/api/paypal/capture-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderID: data.orderID })
+          });
+          const capture = await r.json();
+          if (!r.ok) throw new Error(capture.error || 'No se pudo capturar el pago');
+
+          const buyer = capture?.payer?.name?.given_name || 'cliente';
+          msg.textContent = `¡Gracias por tu compra, ${buyer}! ✔`;
+        },
+
+        onError: (err) => {
+          console.error(err);
+          msg.textContent = 'Hubo un error con el pago.';
         }
+      }).render('#paypal-button-container');
+    }
 
-        async function renderButton() {
-            // @ts-ignore
-            paypal.Buttons({
-                style: { layout: 'vertical', shape: 'pill' },
-
-                // Crear orden (precios validados en backend por SKU)
-                createOrder: async () => {
-                    const r = await fetch('/api/paypal/create-order', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ sku: product.sku })
-                    });
-                    const data = await r.json();
-                    if (!r.ok) throw new Error(data.error || 'No se pudo crear la orden');
-                    return data.id;
-                },
-
-                // Capturar pago
-                onApprove: async (data) => {
-                    msg.textContent = 'Capturando pago...';
-                    const r = await fetch('/api/paypal/capture-order', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ orderID: data.orderID })
-                    });
-                    const capture = await r.json();
-                    if (!r.ok) throw new Error(capture.error || 'No se pudo capturar el pago');
-
-                    const buyer = capture?.payer?.name?.given_name || 'cliente';
-                    msg.textContent = `¡Gracias por tu compra, ${buyer}! ✔`;
-                },
-
-                onError: (err) => {
-                    console.error(err);
-                    msg.textContent = 'Hubo un error con el pago.';
-                }
-            }).render('#paypal-button-container');
-        }
-
-        bootstrap();
-    </script>
+    bootstrap();
+  </script>
 </body>
-
 </html>

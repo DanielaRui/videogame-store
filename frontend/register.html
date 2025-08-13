@@ -1,43 +1,87 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="css/styles.css">
-    <title>Registro</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="stylesheet" href="css/styles.css"/>
+  <title>Registro</title>
 </head>
 
 <body>
-    <nav class="nav"><a href="/">Inicio</a><a href="/login.html">Entrar</a></nav>
-    <div class="card center">
-        <h2>Crea tu cuenta</h2>
-        <input class="input" id="email" placeholder="Correo" type="email">
-        <input class="input" id="password" placeholder="Contraseña" type="password">
-        <button class="btn" id="btn-register">Registrarme</button>
-        <p id="msg"></p>
-    </div>
-    <script>
-        const API = '';
-        document.getElementById('btn-register').onclick = async () => {
-            const email = emailInput.value.trim();
-            const password = password.value.trim();
-            msg.textContent = 'Creando...';
-            try {
-                const r = await fetch('/api/auth/register', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
-                });
-                const data = await r.json();
-                if (!r.ok) throw new Error(data.error || 'Error al registrar');
-                msg.textContent = 'Usuario creado ✔';
-                setTimeout(() => location.href = '/login.html', 800);
-            } catch (e) { msg.textContent = e.message; }
-        };
-        const emailInput = document.getElementById('email');
-        const password = document.getElementById('password');
-        const msg = document.getElementById('msg');
-    </script>
-</body>
+  <!-- Navbar dinámico -->
+  <div id="navbar-container"></div>
 
+  <div class="card center">
+    <h2>Crea tu cuenta</h2>
+    <input class="input" id="email" placeholder="Correo" type="email" required />
+    <input class="input" id="password" placeholder="Contraseña (6+ caracteres)" type="password" minlength="6" required />
+    <button class="btn" id="btn-register">Registrarme</button>
+    <p id="msg"></p>
+  </div>
+
+  <!-- Cargar navbar.html y luego la lógica de nav.js -->
+  <script>
+    fetch("/navbar.html")
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById("navbar-container").innerHTML = html;
+        import("/nav.js"); // controla Entrar/Salir, correo, ocultar Productos, etc.
+      });
+  </script>
+
+  <!-- Registro + auto-login con Firebase -->
+  <script type="module">
+    import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+
+    // ⚠️ Tu config real
+    const firebaseConfig = {
+      apiKey: "AIzaSyCJR317CGtPIRnQeans4-HVJh1-1gWQUyA",
+      authDomain: "videogame-store-a1846.firebaseapp.com",
+      projectId: "videogame-store-a1846",
+      appId: "1:363585521202:web:7ffca0b4c4a7777550de2b"
+    };
+
+    // Evita doble inicialización (nav.js también inicia Firebase)
+    if (!getApps().length) initializeApp(firebaseConfig);
+    const auth = getAuth();
+
+    const emailInput = document.getElementById('email');
+    const passInput  = document.getElementById('password');
+    const btn        = document.getElementById('btn-register');
+    const msg        = document.getElementById('msg');
+
+    btn.onclick = async () => {
+      const email = emailInput.value.trim();
+      const pass  = passInput.value.trim();
+
+      if (!email || pass.length < 6) {
+        msg.textContent = 'Escribe un correo y una contraseña de 6+ caracteres.';
+        return;
+      }
+
+      btn.disabled = true; msg.textContent = 'Creando...';
+      try {
+        // 1) Crear en tu backend (Admin SDK)
+        const r = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password: pass })
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || 'Error al registrar');
+
+        // 2) Auto-login en el navegador
+        await signInWithEmailAndPassword(auth, email, pass);
+
+        msg.textContent = 'Cuenta creada y sesión iniciada ✔';
+        setTimeout(()=>location.href='/', 600);
+      } catch (e) {
+        msg.textContent = e.message;
+      } finally {
+        btn.disabled = false;
+      }
+    };
+  </script>
+</body>
 </html>
